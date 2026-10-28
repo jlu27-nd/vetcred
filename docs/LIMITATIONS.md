@@ -1,6 +1,6 @@
 # MVP limits and verification boundaries
 
-- The initial preview retains Vercel SSO protection. A shared portfolio needs no VetCred account, but an outside visitor still needs deployment access until the owner approves public preview access. Scoped automated access is distinct from an unrestricted public-sharing test.
+- The owner approved public preview access and Vercel Deployment Protection is disabled. Private cases still require Supabase authentication and case authorization. Earlier protected-preview checks used scoped deployment access; the verification record distinguishes those checks from a public-sharing test with no deployment access header.
 
 - The prototype uses seeded accounts and server-provisioned cases. Invitations, self-service enrollment, counselor-assignment administration, password recovery and OAuth sign-in are not complete product flows. Email/password sessions are the implemented authentication path.
 - Text extraction supports text-based PDF, DOCX and UTF-8 TXT. There is no OCR, handwriting recognition or password-protected document processing. Unreadable/empty extraction fails with a manual text alternative. PDF processing is limited to 30 pages; extracted text to 80,000 characters and 1,000 segments.

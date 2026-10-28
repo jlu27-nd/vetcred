@@ -112,12 +112,23 @@ test('real isolated sample UI: source review, photo edit/order, transcript corre
   expect((await state(page)).case.profile.name).toBe('Alex Morgan — autosave check');
 
   await page.setViewportSize({width:390,height:844});
-  await page.screenshot({path:'work/ui-mobile.png',fullPage:true});
+  const mobileMenu=page.getByRole('button',{name:'Open navigation',exact:true});
+  await expect(page.getByRole('navigation',{name:'Workspace navigation'})).toBeHidden();
+  await mobileMenu.click();
+  await expect(mobileMenu).toHaveAttribute('aria-expanded','true');
+  await expect(page.getByRole('navigation',{name:'Workspace navigation'})).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(mobileMenu).toHaveAttribute('aria-expanded','false');
+  await expect(mobileMenu).toBeFocused();
+  await expect(page.getByRole('navigation',{name:'Workspace navigation'})).toBeHidden();
+  await expect.poll(()=>page.locator('.sidebar').evaluate(element=>element.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+  await page.screenshot({path:'work/ui-mobile.png',fullPage:true,animations:'disabled'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await nav(page,'My portfolio');
   await expect(page.getByRole('heading',{name:'Make it yours. Then share it.'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Publish & create sharing link'})).toBeDisabled();
-  await page.screenshot({path:'work/ui-mobile-portfolio.png',fullPage:true});
+  await expect.poll(()=>page.locator('.sidebar').evaluate(element=>element.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+  await page.screenshot({path:'work/ui-mobile-portfolio.png',fullPage:true,animations:'disabled'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Reset sample',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Welcome back, Alex.'})).toBeVisible({timeout:90_000});

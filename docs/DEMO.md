@@ -2,6 +2,10 @@
 
 Use a seeded veteran account for the real-provider demonstration. Open the assigned counselor account in a separate browser profile and keep a signed-out browser ready for the share page. Use synthetic files only. Check provider access before presenting; processing time varies and can extend the walkthrough.
 
+The owner approved public preview access, and Vercel Deployment Protection is disabled. Open a published share link in a fresh browser session without a VetCred login or Vercel access header. Private workspace access still requires the seeded account; the sample creates an isolated session for each visitor.
+
+For automated verification of the current public preview, leave `VETCRED_USE_PREVIEW_OIDC` unset or set it to `0`. If your team later enables Deployment Protection, each demonstration browser will also need authorized deployment access. The optional `VETCRED_USE_PREVIEW_OIDC=1` test helper can use a current authorized Vercel OIDC token for that protected environment. It sends deployment access headers only to the exact configured preview origin; direct Supabase uploads receive no such header. Do not paste tokens into URLs or distribute them to demo attendees.
+
 For a predictable fixture walkthrough, choose “Explore a sample.” Say explicitly: **this fictional sample uses labeled sample transcription and writing results; it is not a live AI demonstration.** All sample data is isolated from real veteran cases.
 
 Prepare supported files for the live walkthrough from the repository's synthetic assets. From the repository root, this command writes a TXT resume and two WebP illustrations to ignored `work/demo/`; the audio is already at `public/sample/story.wav`:
