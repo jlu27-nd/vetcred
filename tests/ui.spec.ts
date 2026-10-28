@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import type { Workspace } from '../src/lib/types';
 import { previewHeaders, scopePreviewHeaders } from './preview-access';
 
@@ -141,4 +141,37 @@ test('real isolated sample UI: source review, photo edit/order, transcript corre
   await writeFile('work/ui-browser-results.json',JSON.stringify({runtimeErrors,consoleErrors,failedResponses,screenshots:['ui-desktop.png','ui-mobile.png','ui-mobile-portfolio.png'],sampleCaseIsolation:true,photoPersistence:true,resumeReview:true,transcriptRevision:true,profileAutosave:true,sampleReset:true},null,2));
   expect(runtimeErrors).toEqual([]);
   expect(consoleErrors).toEqual([]);
+});
+
+test('mobile navigation stays out of the tab order while closed and restores focus',async({page,baseURL})=>{
+  await scopePreviewHeaders(page.context(),baseURL);
+  const accounts=JSON.parse(await readFile('work/seed-accounts.json','utf8'));
+  const login=await page.request.post('/api/auth',{headers:previewHeaders(),data:{action:'login',email:accounts.veteran.email,password:accounts.veteran.password}});
+  expect(login.status()).toBe(200);
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/');
+  const toggle=page.getByRole('button',{name:'Open navigation',exact:true});
+  const navigation=page.getByRole('navigation',{name:'Workspace navigation'});
+  await expect(toggle).toBeVisible();
+  await expect(navigation).toBeHidden();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded','true');
+  await expect(navigation.getByRole('button',{name:'My workspace',exact:true})).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await expect(toggle).toBeFocused();
+  await expect(navigation).toBeHidden();
+  await page.keyboard.press('Tab');
+  expect(await page.evaluate(()=>!!document.activeElement?.closest('#workspace-sidebar'))).toBe(false);
+  await toggle.click();
+  await navigation.getByRole('button',{name:'My portfolio',exact:true}).click();
+  await expect(navigation).toBeHidden();
+  await expect(toggle).toBeFocused();
+  await expect.poll(()=>page.locator('.sidebar').evaluate(element=>element.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await page.screenshot({path:'work/final-mobile.png',fullPage:true,animations:'disabled'});
+  expect(errors).toEqual([]);
 });

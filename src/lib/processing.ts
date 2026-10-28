@@ -9,6 +9,20 @@ export type AssetKind = Asset['kind'];
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 export const UPLOAD_LIMITS = { photo: 10 * 1024 * 1024, resume: 8 * 1024 * 1024, support: 8 * 1024 * 1024, audio: 24 * 1024 * 1024 } as const;
 export const MAX_DOCUMENT_CHARACTERS = 80000;
+
+export class DocumentRuntimeUnavailableError extends Error {
+  constructor() {
+    super('PDF processing is temporarily unavailable. Retry later, or paste the document text manually.');
+    this.name = 'DocumentRuntimeUnavailableError';
+  }
+}
+
+export function isPdfRuntimeFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = 'code' in error ? String(error.code) : '';
+  return /^(?:ERR_MODULE_NOT_FOUND|MODULE_NOT_FOUND)$/.test(code) ||
+    /Cannot (?:find|load) (?:module|package)|DOMMatrix is not defined|Setting up fake worker failed|workerSrc|native binding/i.test(error.message);
+}
 const types: Record<AssetKind, Record<string, string[]>> = {
   photo: { 'image/jpeg':['jpg','jpeg'], 'image/png':['png'], 'image/webp':['webp'] },
   resume: { 'application/pdf':['pdf'], [DOCX_MIME]:['docx'], 'text/plain':['txt'] },
@@ -116,7 +130,16 @@ export async function extractDocument(buffer: Buffer, mime: string): Promise<{lo
       return checkExtraction(value.split('\n\n').map((text,index)=>({locator:`DOCX paragraph ${index+1}`,text:text.trim()})).filter(segment=>segment.text));
     }
     if (mime!=='application/pdf') throw new Error('Unsupported document format.');
-    const {getDocument}=await import('pdfjs-dist/legacy/build/pdf.mjs');
+    let pdfjs: typeof import('pdfjs-dist/legacy/build/pdf.mjs');
+    try {
+      // Load the published native implementation explicitly. PDF.js uses it
+      // for its own DOM geometry polyfills; no custom polyfills are installed.
+      await import('@napi-rs/canvas');
+      pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    } catch {
+      throw new DocumentRuntimeUnavailableError();
+    }
+    const { getDocument } = pdfjs;
     const task=getDocument({data:new Uint8Array(buffer),useSystemFonts:false,disableFontFace:true,maxImageSize:40_000_000,verbosity:0});
     const timer=setTimeout(()=>void task.destroy(),25_000);
     try {
@@ -134,6 +157,8 @@ export async function extractDocument(buffer: Buffer, mime: string): Promise<{lo
       return checkExtraction(segments);
     } finally { clearTimeout(timer); await task.destroy(); }
   } catch (error) {
+    if (error instanceof DocumentRuntimeUnavailableError) throw error;
+    if (mime === 'application/pdf' && isPdfRuntimeFailure(error)) throw new DocumentRuntimeUnavailableError();
     if (error instanceof Error && /readable|long|30 pages|Unsupported|UTF-8|binary/.test(error.message)) throw error;
     throw new Error('The document could not be read. It may be damaged, password-protected, or scanned. Export a text-based copy or paste the text manually.');
   }

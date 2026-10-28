@@ -127,3 +127,5 @@ The intended mapping is GitHub `jlu27-nd/vetcred` â†’ Vercel team `jon-lu-llc` â
 See [the three-minute demo](docs/DEMO.md), [verification evidence](docs/VERIFICATION.md) and [remaining limitations](docs/LIMITATIONS.md).
 
 The owner explicitly approved public preview access, and Vercel Deployment Protection has been disabled for this project. Private VetCred workspaces still require Supabase authentication and case authorization. The sample entry point and valid published share links can be reached without a Vercel login. See the verification record for the exact tested commit and whether a run used protected or ordinary public access.
+
+The repository started empty. GitHub selected the first pushed branch, `feat/vetcred-mvp`, as its default branch; no separate `main` commit was created. Deployment in this delivery uses the Vercel CLI with an explicitly checked Preview target. Automatic Git-triggered deployments are not connected, so a later push alone does not publish an application update.

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build --webpack",
+    "build": "next build --webpack && node --import tsx scripts/check-pdf-runtime.ts",
     "start": "next start --hostname 127.0.0.1",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@ai-sdk/gateway": "4.0.128",
+    "@napi-rs/canvas": "1.0.13",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.118.0",
     "ai": "7.0.155",

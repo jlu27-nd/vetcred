@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { deflateRawSync } from 'node:zlib';
 import sharp from 'sharp';
-import { DOCX_MIME, extractDocument, inspectFile, isSampleAudio, isSampleResume, sanitizePhoto, SAMPLE_RESUME, validateUpload } from '../src/lib/processing';
+import { DOCX_MIME, DocumentRuntimeUnavailableError, extractDocument, inspectFile, isPdfRuntimeFailure, isSampleAudio, isSampleResume, sanitizePhoto, SAMPLE_RESUME, validateUpload } from '../src/lib/processing';
 
 function pdf(pages:string[]) {
   const objects:string[]=['<< /Type /Catalog /Pages 2 0 R >>',''];
@@ -35,6 +35,18 @@ function docx() {return zip({
 });}
 
 describe('real document and media processing',()=>{
+  it('distinguishes missing PDF runtime assets from an unreadable document',()=>{
+    expect(isPdfRuntimeFailure(new Error('Setting up fake worker failed: Cannot find module /private/runtime/pdf.worker.mjs'))).toBe(true);
+    expect(isPdfRuntimeFailure(new ReferenceError('DOMMatrix is not defined'))).toBe(true);
+    expect(isPdfRuntimeFailure(Object.assign(new Error('runtime dependency'), {code:'MODULE_NOT_FOUND'}))).toBe(true);
+    expect(isPdfRuntimeFailure(new Error('Invalid PDF structure.'))).toBe(false);
+  });
+  it('reports a safe retryable PDF runtime error without blaming the document',()=>{
+    const error=new DocumentRuntimeUnavailableError();
+    expect(error.message).toContain('temporarily unavailable');
+    expect(error.message).toContain('Retry');
+    expect(error.message).not.toMatch(/damaged|scanned|private\/runtime|module/i);
+  });
   it('enforces type, extension, size and empty-file limits',()=>{
     expect(()=>validateUpload({kind:'photo',name:'kit.png',mime:'image/png',size:100})).not.toThrow();
     expect(()=>validateUpload({kind:'photo',name:'secret.html',mime:'image/png',size:100})).toThrow('JPEG');
