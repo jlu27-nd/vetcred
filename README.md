@@ -78,7 +78,7 @@ pnpm test
 pnpm build
 ```
 
-The 17 unit checks comprise nine checks in `tests/processing.test.ts` for real parsing, file validation and image sanitization, and eight checks in `tests/ai.test.ts` using **mocked provider responses** for schemas, source integrity, prompt-injection boundaries and error handling. Mocked checks are not provider smoke tests.
+The 21 unit checks comprise eleven processing/runtime checks for real parsing, validation, image sanitization and safe runtime failures; eight AI checks using **mocked provider responses** for schemas, source integrity, prompt-injection boundaries and error handling; and two portfolio privacy checks. Mocked checks are not provider smoke tests. Production builds also verify PDF worker/native dependency packaging and reject conflicting symlink paths.
 
 For the real database suite, use the isolated preview configuration and opt in explicitly:
 
