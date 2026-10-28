@@ -1,0 +1,9 @@
+.env*
+.git/
+.agents/
+work/
+test-results/
+playwright-report/
+supabase/.temp/
+node_modules/
+.next/

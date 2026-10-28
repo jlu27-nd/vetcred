@@ -1,0 +1,10 @@
+import { z } from 'zod';
+export const text=z.string().max(10000);
+export const ids=z.array(z.uuid()).max(100);
+export const timeline=z.object({id:z.uuid(),title:z.string().max(240),organization:z.string().max(240),dates:z.string().max(120),location:z.string().max(240),description:text,sourceIds:ids}).strict();
+export const profileSchema=z.object({name:z.string().max(120),headline:z.string().max(240),introduction:text,occupation:z.string().max(100),careerDirection:z.string().max(500),service:z.array(timeline).max(50),education:z.array(timeline).max(50),credentials:z.array(z.object({id:z.uuid(),name:z.string().max(300),status:z.string().max(150),sourceIds:ids}).strict()).max(50),contactEmail:z.union([z.literal(''),z.email()]),shareContact:z.boolean()}).strict();
+export const settingsSchema=z.object({sections:z.array(z.enum(['introduction','stories','photos','service','education','credentials'])).length(6).refine(a=>new Set(a).size===6),hidden:z.array(z.string().max(40)).max(6)}).strict();
+export const contextSchema=z.object({happening:text,role:text,date:z.string().max(100),actions:text,matters:text}).strict();
+export const photoSchema=z.object({id:z.uuid(),description:text.optional(),context:contextSchema.optional(),caption:text.optional(),selected:z.boolean().optional(),cover:z.boolean().optional(),association:z.string().max(100).optional()}).strict();
+export const claimEditSchema=z.object({id:z.uuid(),accepted:text,selected:z.boolean(),reviewStatus:z.enum(['pending','accepted','rejected','counselor_reviewed']).optional(),fields:z.object({title:z.string().max(240),organization:z.string().max(240),dates:z.string().max(120),location:z.string().max(240)}).optional()}).passthrough();
+export const storyEditSchema=z.object({id:z.uuid(),title:z.string().max(240),narrative:text,accomplishment:text,tags:z.array(z.string().max(80)).max(15),selected:z.boolean(),accepted:z.boolean().optional(),position:z.number().int().min(0).max(100).optional(),followUpAnswer:text.optional()}).passthrough();

@@ -1,0 +1,2 @@
+import { authClient } from '@/lib/server';
+export async function GET(request:Request){const url=new URL(request.url);const code=url.searchParams.get('code');if(code){const {error}=await (await authClient()).auth.exchangeCodeForSession(code);if(!error)return Response.redirect(new URL('/',url.origin));}return Response.redirect(new URL('/?authError=Sign-in%20link%20is%20invalid%20or%20expired.',url.origin));}
