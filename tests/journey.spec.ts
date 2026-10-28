@@ -36,6 +36,11 @@ async function freshAccount():Promise<{account:Credentials;seed:SeedAccounts}> {
   const email=`journey-${randomUUID()}@vetcred.example`,password=randomBytes(30).toString('base64url');
   const {data,error}=await admin.auth.admin.createUser({email,password,email_confirm:true});
   if(error||!data.user){await pool.end();throw new Error('Unable to create isolated journey account.');}
+  const counselorEmail=`journey-counselor-${randomUUID()}@vetcred.example`,counselorPassword=randomBytes(30).toString('base64url');
+  const counselorCreated=await admin.auth.admin.createUser({email:counselorEmail,password:counselorPassword,email_confirm:true});
+  if(counselorCreated.error||!counselorCreated.data.user){await pool.end();throw new Error('Unable to create isolated journey counselor.');}
+  // Tests must not add cases to the counselor handed to the human demo user.
+  seed.counselor={id:counselorCreated.data.user.id,email:counselorEmail,password:counselorPassword};
   const account={id:data.user.id,email,password,caseId:randomUUID(),otherCaseId:randomUUID(),organizationId:randomUUID()};
   const db=await pool.connect();
   try{

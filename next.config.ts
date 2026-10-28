@@ -1,16 +1,30 @@
 import type { NextConfig } from 'next';
+import { readFileSync, realpathSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, relative, resolve, sep } from 'node:path';
+
+const projectRoot = process.cwd();
+const runtimeRequire = createRequire(resolve(projectRoot, 'package.json'));
+const tracePath = (path: string) => `./${relative(projectRoot, realpathSync(path)).split(sep).join('/')}`;
+const canvasPackage = realpathSync(runtimeRequire.resolve('@napi-rs/canvas/package.json'));
+const canvasRequire = createRequire(canvasPackage);
+const canvasMetadata = JSON.parse(readFileSync(canvasPackage, 'utf8')) as { optionalDependencies?: Record<string, string> };
+const nativePackagePaths = Object.keys(canvasMetadata.optionalDependencies ?? {}).flatMap(name => {
+  try { return [`${tracePath(dirname(canvasRequire.resolve(`${name}/package.json`)))}/**/*`]; }
+  catch { return []; } // Native packages for other operating systems are absent.
+});
+
 const config: NextConfig = {
   outputFileTracingIncludes: {
     '/api/**/*': ['./supabase/certs/*.crt', './public/sample/**/*'],
     '/share/**/*': ['./supabase/certs/*.crt'],
-    // PDF.js loads its worker and native canvas through runtime imports that
-    // static tracing cannot discover. Include both npm and pnpm layouts.
+    // Include canonical physical paths only. Including children of pnpm's
+    // symlink directories creates an invalid Vercel function package.
     '/api/command': [
-      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
-      './node_modules/pdfjs-dist/package.json',
-      './node_modules/@napi-rs/canvas/**/*',
-      './node_modules/@napi-rs/canvas-*/**/*',
-      './node_modules/.pnpm/@napi-rs+canvas*/node_modules/@napi-rs/canvas*/**/*',
+      tracePath(runtimeRequire.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')),
+      tracePath(runtimeRequire.resolve('pdfjs-dist/package.json')),
+      `${tracePath(dirname(canvasPackage))}/**/*`,
+      ...nativePackagePaths,
     ],
   },
   serverExternalPackages: ['sharp', 'pg', 'pdfjs-dist', '@napi-rs/canvas'],
